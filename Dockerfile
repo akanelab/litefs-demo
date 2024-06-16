@@ -24,12 +24,6 @@ FROM ${BUILDER_IMAGE} as builder
 RUN apt-get update -y && apt-get install -y build-essential git \
   && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
-# Install LiteFS dependencies
-RUN apt-get update -y && apt-get install -y ca-certificates fuse3 sqlite3
-
-# Copy in the LiteFS binary
-COPY --from=flyio/litefs:0.5 /usr/local/bin/litefs /usr/local/bin/litefs
-
 # prepare build dir
 WORKDIR /app
 
@@ -93,7 +87,14 @@ ENV MIX_ENV="prod"
 # Only copy the final release from the build stage
 COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/litefs_demo ./
 
-USER nobody
+# Install LiteFS dependencies
+RUN apt-get update -y && apt-get install -y ca-certificates fuse3 sqlite3
+
+# Copy in the LiteFS binary
+COPY --from=flyio/litefs:0.5 /usr/local/bin/litefs /usr/local/bin/litefs
+
+# Copy the possible LiteFS configurations.
+ADD fly-io-config/litefs.yml /etc/litefs.yml
 
 # If using an environment that doesn't automatically reap zombie processes, it is
 # advised to add an init process such as tini via `apt-get install`
